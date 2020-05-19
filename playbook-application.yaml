@@ -1,7 +1,7 @@
 ---
 -
   hosts: all
-  name: Install And Configure Firewall
+  name: Install And Configure LAMP
   tasks:
     -
       name: Install firewalld
@@ -30,12 +30,6 @@
         name: firewalld
         state: reloaded
 
-
--
-  hosts: all
-  name: Install Python And Pip
-  tasks:
-
     -
       name: Install Python2
       yum:
@@ -60,45 +54,41 @@
         name: python-pip
         state: latest
 
--
-  hosts: all
-  name: Deploy and Configure MariaDB Database
-  vars:
-    mysql_root_login: "ecomuser"
-    mysql_root_password: "ecompassword"
-  tasks:
-
     -
       name: Install MariaDB
       yum:
-        name: mariadb-server
-        state: latest
+        name:
+          - mariadb-server
+          - MySQL-python
+        state: present
 
     -
       name: Install PyMySQL Connector
       pip:
         name: PyMySQL
-        state: latest
+        state: present
 
     -
       name: Start MariaDB
-      service:
-        name: mariadb
-        state: started
-        enabled: yes
+      command: 'systemctl enable mariadb'
+      become: yes
+      become_user: root
 
-    -
-      name: Create new database
-      mysql_db:
-        name: ecomdb
-        state: present
+    -  name: Create new database
+       mysql_db:
+         login_user: root
+         login_password:
+         name: ecomdb
+         state: present
+         collation: utf8_general_ci
 
     -
       name: Create database user with all database privileges
       mysql_user:
-        name: '{{  mysql_root_login  }}'
-        password: '{{  mysql_root_password  }}'
+        name: 'ecomuser'
+        password: 'ecompassword'
         priv: '*.*:ALL'
+        host: localhost
         state: present
 
     -
@@ -111,7 +101,68 @@
     -
       name: Copy file to target servers
       copy:
-        src: /ansible-first-project/db.sql
+        src: /home/osboxes/project/ansible-first-project/db.sql
         dest: /tmp/db.sql
 
     -
+      name: Load the db from script
+      mysql_db:
+        state: import
+        name: ecomdb
+        target: /tmp/db.sql
+
+    -
+      name: Install and configure Web packages
+      yum:
+        name:
+          - httpd
+          - php
+          - php-mysql
+        state: present
+
+    -
+        name: Configure firewall for http
+        firewalld:
+          port: 80/tcp
+          zone: public
+          permanent: true
+          state: enabled
+
+    -
+      name: Reload firewall after adding a zone
+      systemd:
+          name: firewalld
+          state: reloaded
+
+    -
+      name: Replace index.html with index.php
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: 'DirectoryIndex index.html'
+        replace: 'DirectoryIndex index.php'
+
+    -
+      name: Start http
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+
+    -
+      name: Install git
+      yum:
+        name: git
+        state: present
+
+    -
+      name: Copy the e-commerce template app
+      git:
+        repo: https://github.com/kodekloudhub/learning-app-ecommerce.git
+        dest: /var/www/html/
+
+    -
+        name: Replace database server with localhost
+        replace:
+          path: /var/www/html/index.php
+          regexp: '172.20.1.101'
+          replace: 'localhost'
