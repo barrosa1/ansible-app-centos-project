@@ -1,0 +1,22 @@
+---
+-
+  hosts: all
+  name: "Deploy Pre-Requisites"
+  tasks:
+    -
+      name: "Install firewalld"
+      yum:
+        name: firewalld
+        state: latest
+
+    -
+      name: "Start firewalld"
+      service:
+        name: firewalld
+        state: started
+    -
+      name: "Automatically enable firewalld after reboot"
+      systemd:
+        name: firewalld
+        state: started
+        enabled: yes
