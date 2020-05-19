@@ -1,22 +1,117 @@
 ---
 -
   hosts: all
-  name: "Deploy Pre-Requisites"
+  name: Install And Configure Firewall
   tasks:
     -
-      name: "Install firewalld"
+      name: Install firewalld
       yum:
         name: firewalld
         state: latest
 
     -
-      name: "Start firewalld"
+      name: Start firewall
       service:
         name: firewalld
         state: started
+        enabled: yes
+
     -
-      name: "Automatically enable firewalld after reboot"
+      name: Configure firewall for Database
+      firewalld:
+        port: 3306/tcp
+        zone: public
+        permanent: true
+        state: enabled
+
+    -
+      name: Reload firewall after adding a zone
       systemd:
         name: firewalld
+        state: reloaded
+
+
+-
+  hosts: all
+  name: Install Python And Pip
+  tasks:
+
+    -
+      name: Install Python2
+      yum:
+        name: python2
+        state: latest
+
+    -
+      name: Install Python3
+      yum:
+        name: python3
+        state: latest
+
+    -
+      name: Install epel repository
+      yum:
+        name: epel-release
+        state: latest
+
+    -
+      name: Install pip
+      yum:
+        name: python-pip
+        state: latest
+
+-
+  hosts: all
+  name: Deploy and Configure MariaDB Database
+  vars:
+    mysql_root_login: "ecomuser"
+    mysql_root_password: "ecompassword"
+  tasks:
+
+    -
+      name: Install MariaDB
+      yum:
+        name: mariadb-server
+        state: latest
+
+    -
+      name: Install PyMySQL Connector
+      pip:
+        name: PyMySQL
+        state: latest
+
+    -
+      name: Start MariaDB
+      service:
+        name: mariadb
         state: started
         enabled: yes
+
+    -
+      name: Create new database
+      mysql_db:
+        name: ecomdb
+        state: present
+
+    -
+      name: Create database user with all database privileges
+      mysql_user:
+        name: '{{  mysql_root_login  }}'
+        password: '{{  mysql_root_password  }}'
+        priv: '*.*:ALL'
+        state: present
+
+    -
+      name: Flush priviliges
+      service:
+        name: mariadb
+        state: restarted
+        enabled: yes
+
+    -
+      name: Copy file to target servers
+      copy:
+        src: /ansible-first-project/db.sql
+        dest: /tmp/db.sql
+
+    -
