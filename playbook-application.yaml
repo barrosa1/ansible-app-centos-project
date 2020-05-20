@@ -3,6 +3,7 @@
   hosts: all
   name: Install And Configure LAMP
   tasks:
+
     -
       name: Install firewalld
       yum:
@@ -15,20 +16,6 @@
         name: firewalld
         state: started
         enabled: yes
-
-    -
-      name: Configure firewall for Database
-      firewalld:
-        port: 3306/tcp
-        zone: public
-        permanent: true
-        state: enabled
-
-    -
-      name: Reload firewall after adding a zone
-      systemd:
-        name: firewalld
-        state: reloaded
 
     -
       name: Install Python2
@@ -70,17 +57,29 @@
 
     -
       name: Start MariaDB
-      command: 'systemctl enable mariadb'
-      become: yes
-      become_user: root
+      service:
+        name: mariadb
+        state: started
+        enabled: yes
+
+    -
+      name: Configure firewall for Database
+      firewalld:
+        port: 3306/tcp
+        zone: public
+        permanent: true
+        state: enabled
+
+    -
+      name: Reload firewall after adding a zone
+      systemd:
+        name: firewalld
+        state: reloaded
 
     -  name: Create new database
        mysql_db:
-         login_user: root
-         login_password:
          name: ecomdb
          state: present
-         collation: utf8_general_ci
 
     -
       name: Create database user with all database privileges
