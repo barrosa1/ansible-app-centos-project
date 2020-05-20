@@ -1,28 +1,32 @@
+# Ansible LAMP playbook.
 This is a playbook to automate the deployment of sample template e-commerce application in LAMP architecture by using Ansible in linux centOS.
 Playbook allows you to deploy services packages and applicaton on x hosts contained in inventory.txt using the centOS environment as the controller.
 
-Command call:
+## Command call:
+
+```bash
 ansible-playbook playbook-application.yaml -i inventory.txt
+```
 
-Requirements:
-Installed ansible on the controller and the ability to connect to target hosts ussing ssh.
+## Requirements:
+Installed ansible on the controller and the ability to connect to target hosts using ssh.
 
-Main Steps in playbook:
+## Main Steps in playbook:
 
-- Firewall instalation
+- Firewall installation
 
-- MariaDB instalation
+- MariaDB installation
 
-- Configurating firewall for Database
+- Configuring firewall for Database
 
-- Configurating Database
+- Configuring Database
 
 - Loading Product Inventory Information to database
 
 - Installing required packages
 
-- Http configuration
+- Http configurattion
 
-- Download template LAMP app
+- Downloading template LAMP app
 
-- Update index.php
+- Index.php update
